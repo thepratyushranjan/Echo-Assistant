@@ -1,120 +1,107 @@
-import React, {useEffect, useState} from 'react'
-import axios from "axios"
-import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 const Signup = () => {
-    const navigate=useNavigate()
-    const [formdata, setFormdata]=useState({
-        email:"",
-        first_name:"",
-        last_name:"",
-        password:"",
-        password2:""
-    })
-    const [error, setError]=useState('')
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    email: '',
+    first_name: '',
+    last_name: '',
+    password: '',
+    password2: ''
+  });
 
-    const handleOnchange = (e)=>{
-        setFormdata({...formdata, [e.target.name]:e.target.value})
+  const handleOnChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSigninWithGoogle = async (response) => {
+    const payload = response.credential;
+    try {
+      const serverRes = await axios.post("http://localhost:8000/api/v1/auth/google/", { 'access_token': payload });
+      if (serverRes.status === 200) {
+        navigate("/otp/verify");
+        toast.success("Google login successful!");
+      } else {
+        toast.error("Google login failed.");
+      }
+    } catch (error) {
+      toast.error("Google login failed.");
     }
+  };
 
-    
-    const handleSigninWithGoogle = async (response)=>{
-        const payload=response.credential
-        const server_res= await axios.post("http://localhost:8000/api/v1/auth/google/", {'access_token':payload})
-        console.log(server_res.data)
+  const handleSigninWithGithub = async () => {
+    // Redirect to GitHub's OAuth authorization URL
+    window.location.assign(`https://github.com/login/oauth/authorize?client_id=${process.env.REACT_APP_GITHUB_CLIENT_ID}&scope=user:email`);
+  };
+
+  useEffect(() => {
+    /* global google */
+    google.accounts.id.initialize({
+      client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+      callback: handleSigninWithGoogle
+    });
+    google.accounts.id.renderButton(
+      document.getElementById("signInDiv"),
+      { theme: "outline", size: "large", text: "continue_with", shape: "circle", width: "280" }
+    );
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post('http://localhost:8000/api/v1/auth/register/', formData);
+      if (response.status === 201) {
+        navigate("/otp/verify");
+        toast.success(response.data.message);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'An error occurred during signup');
     }
+  };
 
-    useEffect(() => {
-      /* global google */
-      google.accounts.id.initialize({
-        client_id:process.env.REACT_APP_GOOGLE_CLIENT_ID,
-        callback: handleSigninWithGoogle
-      });
-      google.accounts.id.renderButton(
-        document.getElementById("signInDiv"),
-        {theme:"outline", size:"large", text:"continue_with", shape:"circle", width:"280"}
-      );
-        
-    }, [])
+  const { email, first_name, last_name, password, password2 } = formData;
 
-    const {email, first_name, last_name, password, password2}=formdata
-   
-    const handleSubmit =async (e)=>{
-        e.preventDefault()
-       const response = await axios.post('http://localhost:8000/api/v1/auth/register/',formdata)
-       console.log(response.data)
-       const result=response.data
-       if (response.status === 201) {
-          navigate("/otp/verify")
-          toast.success(result.message)
-       }
-
-       
-
-    }
-    
   return (
-    <div>
-        <div className='form-container'>
-            <div style={{width:"100%"}} className='wrapper'>
-            <h2>create account</h2>
-            <form action="" onSubmit={handleSubmit}>
-                <div className='form-group'>
-                 <label htmlFor="">Email Address:</label>
-                 <input type="text"
-                  className='email-form'  
-                  name="email" 
-                  value={email}  
-                  onChange={handleOnchange} />
-               </div>
-               <div className='form-group'>
-                 <label htmlFor="">First Name:</label>
-                 <input type="text"
-                  className='email-form'
-                  name="first_name" 
-                  value={first_name} 
-                  onChange={handleOnchange}/>
-               </div>
-               <div className='form-group'>
-                 <label htmlFor="">Last Name:</label>
-                 <input type="text" 
-                 className='email-form'  
-                 name="last_name" 
-                 value={last_name} 
-                 onChange={handleOnchange}/>
-               </div>
-               <div className='form-group'>
-                 <label htmlFor="">Password:</label>
-                 <input type="text" 
-                 className='email-form'  
-                 name="password" 
-                 value={password} 
-                 onChange={handleOnchange}/>
-               </div>
-               <div className='form-group'>
-                 <label htmlFor="">Confirm Password:</label>
-                 <input type="text" 
-                 className='p'  
-                 name="password2" 
-                 value={password2} 
-                 onChange={handleOnchange}/>
-               </div>
-               <input type="submit" value="Submit" className="submitButton" />
-
-                </form>
-                 <h3 className='text-option'>Or</h3>
-            <div className='githubContainer'>
-                <button>Sign up with Github</button>
-            </div>
-            <div className='googleContainer'>
-                <div id="signInDiv" className='gsignIn'></div>
-            </div>
-           </div>
+    <div className="form-container">
+      <div className="wrapper">
+        <h2>Create Account</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="email">Email Address:</label>
+            <input type="email" id="email" className="email-form" name="email" value={email} onChange={handleOnChange} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="first_name">First Name:</label>
+            <input type="text" id="first_name" className="email-form" name="first_name" value={first_name} onChange={handleOnChange} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="last_name">Last Name:</label>
+            <input type="text" id="last_name" className="email-form" name="last_name" value={last_name} onChange={handleOnChange} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Password:</label>
+            <input type="password" id="password" className="email-form" name="password" value={password} onChange={handleOnChange} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="password2">Confirm Password:</label>
+            <input type="password" id="password2" className="email-form" name="password2" value={password2} onChange={handleOnChange} required />
+          </div>
+          <button type="submit" className="submitButton">Submit</button>
+        </form>
+        <h3 className="text-option">Or</h3>
+        <div className="googleContainer">
+          <div id="signInDiv" className="gsignIn"></div>
         </div>
 
+        <div className="githubContainer">
+          <button onClick={handleSigninWithGithub} className="githubButton">Sign in with GitHub</button>
+        </div>
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default Signup
+export default Signup;
