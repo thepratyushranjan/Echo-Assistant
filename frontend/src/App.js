@@ -4,24 +4,27 @@ import Profile from './components/Profile';
 import Signup from './components/Signup';
 import Login from './components/Login';
 import VerifyEmail from './components/VerifyEmail';
-import { ToastContainer} from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import PasswordResetRequest from './components/PasswordResetRequest';
 import ResetPassword from './components/ResetPassword';
+import Layout from './components/Layout';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
-     <div className='App'>
+    <div className='App'>
       <Router>
-      <ToastContainer />
+        <ToastContainer />
+        <Layout>
           <Routes>
-            <Route path='/' element={<Signup/>}/>
-            <Route path='/login' element={<Login/>}/>
-            <Route path='/dashboard' element={<Profile/>}/>
-            <Route path='/otp/verify' element={<VerifyEmail/>}/>
-            <Route path='/forget-password' element={<PasswordResetRequest/>}/>
-            <Route path='/password-reset-confirm/:uid/:token' element={<ResetPassword/>}/>
+            <Route path='/' element={<Signup />} />
+            <Route path='/login' element={<Login />} />
+            <Route path='/dashboard' element={<Profile />} />
+            <Route path='/otp/verify' element={<VerifyEmail />} />
+            <Route path='/forget-password' element={<PasswordResetRequest />} />
+            <Route path='/password-reset-confirm/:uid/:token' element={<ResetPassword />} />
           </Routes>
+        </Layout>
       </Router>
     </div>
   );
