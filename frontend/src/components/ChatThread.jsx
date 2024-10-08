@@ -18,7 +18,7 @@ const ChatThread = () => {
         ]);
       } else {
         const threadId = messages[0].id;
-        const response = await AxiosInstance.post('auth/messages', {
+        const response = await AxiosInstance.post('auth/messages/', {
           thread_id: threadId,
           prompt: message,
         });

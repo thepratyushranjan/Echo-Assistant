@@ -13,6 +13,7 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from rest_framework.permissions import IsAuthenticated
 from .models import User, ChatThread, Message
 import openai
+from django.conf import settings
 # Create your views here.
 
 
@@ -126,8 +127,42 @@ class ChatThreadApiView(ListCreateAPIView):
         thread = serializer.save()
         return Response(self.get_serializer(thread).data, status=status.HTTP_201_CREATED)
     
+# class MessageApiView(CreateAPIView):
+#     serializer_class=MessageSerializer
+#     permission_classes = [IsAuthenticated]
+
+#     def create(self, request, *args, **kwargs):
+#         thread_id = request.data.get('thread_id')
+#         user_message = request.data.get('prompt')
+#         thread = ChatThread.objects.filter(id=thread_id).first() if thread_id else ChatThread.objects.create()
+
+#         user_message_obj = Message.objects.create(
+#             Chat_Thread = thread,
+#             prompt = user_message
+#         )
+
+#         try:
+#             response = openai.ChatCompletion.create(
+#                 model = "gpt-3.5-turbo",
+#                 messages = [{"role" : "user", "content": user_message }], temperature = 0.5 
+#             )
+#             assistant_response_text = response.choices[0].message.content
+#             assistant_message_obj = Message.objects.create(
+#                 Chat_Thread = thread, 
+#                 prompt = user_message,
+#                 response = assistant_response_text
+#             )
+#             serializer = MessageSerializer(instance = assistant_message_obj)
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         except openai.error.OpenAIError as e:
+#             return response({"error" : str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
+#         except Exception as e:
+#             return response({"error" : str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 class MessageApiView(CreateAPIView):
-    serializer_class=MessageSerializer
+    serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
@@ -136,26 +171,29 @@ class MessageApiView(CreateAPIView):
         thread = ChatThread.objects.filter(id=thread_id).first() if thread_id else ChatThread.objects.create()
 
         user_message_obj = Message.objects.create(
-            Chat_Thread = thread,
-            prompt = user_message
+            Chat_Thread=thread,
+            prompt=user_message
         )
 
         try:
+            openai.api_key = settings.OPENAI_API_KEY
             response = openai.ChatCompletion.create(
-                model = "gpt-3.5-turbo",
-                messages = [{"role" : "user", "content": user_message }], temperature = 0.5 
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": user_message}],
+                temperature=0.5
             )
-            assistant_response_text = response.choices[0].message.content
-            assistant_message_obj = Message.objects.create(
-                Chat_Thread = thread, 
-                prompt = user_message,
-                response = assistant_response_text
-            )
-            serializer = MessageSerializer(instance = assistant_message_obj)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except openai.error.OpenAIError as e:
-            return response({"error" : str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
-        except Exception as e:
-            return response({"error" : str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        
+            assistant_response_text = response.choices[0].message['content']
+            assistant_message_obj = Message.objects.create(
+                Chat_Thread=thread,
+                prompt=user_message,
+                response=assistant_response_text
+            )
+
+            serializer = MessageSerializer(instance=assistant_message_obj)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except openai.error.OpenAIError as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

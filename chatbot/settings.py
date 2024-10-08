@@ -194,3 +194,8 @@ EMAIL_PORT = '857'
 
 
 APPEND_SLASH = False
+
+# Open AI
+
+OPENAI_API_KEY = env("OPENAI_API_KEY")
+
