@@ -1,17 +1,18 @@
 from ast import Expression
 from multiprocessing import context
 from django.shortcuts import render
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, ListCreateAPIView, CreateAPIView
 from rest_framework.response import Response
 from accounts.models import OneTimePassword
-from accounts.serializers import PasswordResetRequestSerializer,LogoutUserSerializer, UserRegisterSerializer, LoginSerializer, SetNewPasswordSerializer
+from accounts.serializers import PasswordResetRequestSerializer,LogoutUserSerializer, UserRegisterSerializer, LoginSerializer, SetNewPasswordSerializer, MessageSerializer, ChatThreadSerializers
 from rest_framework import status
 from .utils import send_generated_otp_to_email
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import smart_str, DjangoUnicodeDecodeError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from rest_framework.permissions import IsAuthenticated
-from .models import User
+from .models import User, ChatThread, Message
+import openai
 # Create your views here.
 
 
@@ -114,3 +115,47 @@ class LogoutApiView(GenericAPIView):
         serializer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
  
+
+class ChatThreadApiView(ListCreateAPIView):
+    serializer_class=ChatThreadSerializers
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        serializer=self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        thread = serializer.save()
+        return Response(self.get_serializer(thread).data, status=status.HTTP_201_CREATED)
+    
+class MessageApiView(CreateAPIView):
+    serializer_class=MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        thread_id = request.data.get('thread_id')
+        user_message = request.data.get('prompt')
+        thread = ChatThread.objects.filter(id=thread_id).first() if thread_id else ChatThread.objects.create()
+
+        user_message_obj = Message.objects.create(
+            Chat_Thread = thread,
+            prompt = user_message
+        )
+
+        try:
+            response = openai.ChatCompletion.create(
+                model = "gpt-3.5-turbo",
+                messages = [{"role" : "user", "content": user_message }], temperature = 0.5 
+            )
+            assistant_response_text = response.choices[0].message.content
+            assistant_message_obj = Message.objects.create(
+                Chat_Thread = thread, 
+                prompt = user_message,
+                response = assistant_response_text
+            )
+            serializer = MessageSerializer(instance = assistant_message_obj)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except openai.error.OpenAIError as e:
+            return response({"error" : str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return response({"error" : str(e)}, status = status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        

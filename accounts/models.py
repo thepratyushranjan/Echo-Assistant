@@ -52,3 +52,19 @@ class OneTimePassword(models.Model):
 
     def __str__(self):
         return f"{self.user.first_name} - otp code"
+    
+
+class ChatThread(models.Model):
+    title = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+    
+class Message(models.Model):
+    Chat_Thread = models.ForeignKey(ChatThread, related_name="messages", on_delete=models.CASCADE)
+    prompt = models.TextField()
+    response = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Message in {self.Chat_Thread.title}"

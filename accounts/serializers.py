@@ -1,7 +1,7 @@
 
 import json
 from dataclasses import field
-from .models import User
+from .models import User, ChatThread, Message
 from rest_framework import serializers
 from string import ascii_lowercase, ascii_uppercase
 from django.contrib.auth import authenticate
@@ -151,5 +151,18 @@ class LogoutUserSerializer(serializers.Serializer):
 
     
 
-    
+class MessageSerializer(serializers.Serializer):
+    class Meta:
+        models = Message
+        fields = ['id', 'prompt', 'response', 'created_at']
+
+class ChatThreadSerializers(serializers.Serializer):
+
+    messages = MessageSerializer(many = True, read_only = True)
+    class Meta:
+        models = ChatThread
+        fields = ['id',  'created_at','messages']
+
+    def create(self, validated_data):
+        return ChatThread.objects.create(**validated_data)
     

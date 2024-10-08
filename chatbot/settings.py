@@ -191,3 +191,6 @@ EMAIL_HOST_PASSWORD = 'vdbk hpkp xvyz gdhq'
 DEFAULT_FROM_EMAIL='thepratyushranjan6060@gmail.com'
 EMAIL_USE_TLS=True
 EMAIL_PORT = '857'
+
+
+APPEND_SLASH = False
